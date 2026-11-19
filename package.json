@@ -1,0 +1,33 @@
+{
+  "name": "opencode-token-usage",
+  "version": "0.1.0",
+  "description": "Global token and cost accounting for OpenCode, with per-model and per-day breakdowns",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "token",
+    "usage",
+    "cost"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui.tsx"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@opencode/plugin": "latest"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.6.6",
+    "@opentui/solid": ">=0.6.6",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}
