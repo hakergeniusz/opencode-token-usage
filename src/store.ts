@@ -97,6 +97,12 @@ function aggregate(store: TokenUsageStore, call: CallRecord): void {
   const day = dayKey(call.ts)
   store.byDay[day] ??= zeroTotals()
   addInto(store.byDay[day], t)
+
+  store.byDayModel ??= {}
+  store.byDayModel[day] ??= {}
+  const modelKey = call.modelKey ?? "unknown"
+  store.byDayModel[day][modelKey] ??= zeroTotals()
+  addInto(store.byDayModel[day][modelKey], t)
 }
 
 async function load(storage: StorageLike, key: string): Promise<TokenUsageStore> {
@@ -105,16 +111,28 @@ async function load(storage: StorageLike, key: string): Promise<TokenUsageStore>
     if (!raw || typeof raw !== "object") return freshStore()
     const parsed = raw as Partial<TokenUsageStore>
     const base = freshStore()
-    return {
+    const store: TokenUsageStore = {
       ...base,
       ...parsed,
       version: 1,
       total: { ...zeroTotals(), ...(parsed.total ?? {}) },
       byModel: parsed.byModel ?? {},
       byDay: parsed.byDay ?? {},
+      byDayModel: parsed.byDayModel ?? {},
       sessions: parsed.sessions ?? {},
       calls: parsed.calls ?? {},
     }
+    // Backfill per-day per-model breakdown for stores created before this field existed.
+    if (Object.keys(store.calls).length > 0 && Object.keys(store.byDayModel ?? {}).length === 0) {
+      for (const call of Object.values(store.calls)) {
+        const day = dayKey(call.ts)
+        store.byDayModel![day] ??= {}
+        const modelKey = call.modelKey ?? "unknown"
+        store.byDayModel![day][modelKey] ??= zeroTotals()
+        addInto(store.byDayModel![day][modelKey], totalsFromCall(call))
+      }
+    }
+    return store
   } catch {
     return freshStore()
   }

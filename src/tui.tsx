@@ -30,17 +30,25 @@ function TokenStatus(props: { getSessionID?: () => string | undefined }) {
       let input = 0
       let output = 0
       let cost = 0
+      const byModel: Record<string, number> = {}
       for (const message of messages as any[]) {
         if (message?.type !== "assistant") continue
         const tokens = message.tokens
+        let msgTotal = 0
         if (tokens) {
-          input += (tokens.input ?? 0) + (tokens.cache?.read ?? 0) + (tokens.cache?.write ?? 0)
-          output += (tokens.output ?? 0) + (tokens.reasoning ?? 0)
+          const inp = (tokens.input ?? 0) + (tokens.cache?.read ?? 0) + (tokens.cache?.write ?? 0)
+          const out = (tokens.output ?? 0) + (tokens.reasoning ?? 0)
+          input += inp
+          output += out
+          msgTotal = inp + out
         }
         cost += message.cost ?? 0
+        const model = message.modelID ? `${message.providerID ?? "?"}/${message.modelID}` : undefined
+        if (model && msgTotal > 0) byModel[model] = (byModel[model] ?? 0) + msgTotal
       }
       if (input === 0 && output === 0 && cost === 0) return undefined
-      return { input, output, cost }
+      const top = Object.entries(byModel).sort((a, b) => b[1] - a[1])[0]?.[0]
+      return { input, output, cost, top }
     } catch {
       return undefined
     }
@@ -58,6 +66,7 @@ function TokenStatus(props: { getSessionID?: () => string | undefined }) {
       {fmt(value.output)}
       {" out · "}
       {fmtCost(value.cost)}
+      {value.top ? ` · ★ ${value.top}` : ""}
     </text>
   )
 }

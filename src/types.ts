@@ -44,6 +44,8 @@ export interface TokenUsageStore {
   total: Totals
   byModel: Record<string, Totals>
   byDay: Record<string, Totals>
+  /** Per-day per-model breakdown, derived from calls (added for graph/tooltips). */
+  byDayModel?: Record<string, Record<string, Totals>>
   sessions: Record<string, Totals>
   calls: Record<string, CallRecord>
   since: number
