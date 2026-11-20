@@ -1,8 +1,7 @@
 import { Plugin } from "@opencode/plugin"
-import { formatTotalsLine } from "./format"
-import { buildCallText } from "./report"
+import { TokenUsage } from "./rpc"
 import { STORAGE_KEY, createUsageStore, totalsFromUsage } from "./store"
-import type { CallRecord } from "./types"
+import type { CallRecord, Totals } from "./types"
 
 export default Plugin.define({
   id: "opencode-token-usage",
@@ -66,51 +65,62 @@ export default Plugin.define({
       }
     })()
 
-    // Tool so the agent can query usage itself.
-    const toolReg = await c.tool.transform((editor: any) => {
-      editor.add({
-        name: "token_usage",
-        description:
-          "Query token and cost usage for the current session or globally across all OpenCode sessions.",
-        input: {
-          type: "object",
-          properties: {
-            scope: {
-              type: "string",
-              enum: ["session", "global", "models", "days"],
-              description: "Which usage to report",
-            },
-            days: {
-              type: "integer",
-              minimum: 1,
-              maximum: 90,
-              description: "Days of history for scope=days",
-            },
-          },
-          required: ["scope"],
-          additionalProperties: false,
-        },
-        options: { codemode: true },
-        execute: async (input: any, toolContext: any) => {
-          await store.ready()
-          const snapshot = await store.get()
-          const scope = input?.scope ?? "session"
-          const days = Math.min(Math.max(Number(input?.days) || 7, 1), 90)
-          return {
-            content: buildCallText(snapshot, scope, days, toolContext?.sessionID),
-          }
-        },
-      })
+    const toModelEntry = (name: string, t: Totals) => ({
+      name,
+      input: t.input,
+      output: t.output,
+      cacheRead: t.cacheRead,
+      cacheWrite: t.cacheWrite,
+      total: t.total,
+      cost: t.cost,
+      requests: t.requests,
     })
 
-    // `/tokens` command removed by design: usage is exposed via the TUI footer status,
-    // the `token_usage` tool, and OpenCode's built-in `/stats` (CLI/TUI). Keeping
-    // reports available programmatically through the tool instead of a separate command.
+    const rpc = await c.rpc.register(TokenUsage, {
+      daily: async () => {
+        await store.ready()
+        const snapshot = await store.get()
+        const days = Object.keys(snapshot.byDay)
+          .sort()
+          .map((date) => {
+            const t = snapshot.byDay[date]
+            const byModel = snapshot.byDayModel?.[date] ?? {}
+            const models = Object.entries(byModel)
+              .map(([name, mt]) => toModelEntry(name, mt as Totals))
+              .sort((a, b) => b.total - a.total)
+            return {
+              date,
+              input: t.input,
+              output: t.output,
+              cacheRead: t.cacheRead,
+              cacheWrite: t.cacheWrite,
+              total: t.total,
+              cost: t.cost,
+              requests: t.requests,
+              models,
+            }
+          })
+        return {
+          since: snapshot.since,
+          updatedAt: snapshot.updatedAt,
+          total: {
+            input: snapshot.total.input,
+            output: snapshot.total.output,
+            cacheRead: snapshot.total.cacheRead,
+            cacheWrite: snapshot.total.cacheWrite,
+            total: snapshot.total.total,
+            cost: snapshot.total.cost,
+            requests: snapshot.total.requests,
+          },
+          days,
+        }
+      },
+    })
 
     return () => {
       controller.abort()
       void modelHook.dispose()
-      void toolReg.dispose()
+      void rpc.dispose()
     }
   },
 })
