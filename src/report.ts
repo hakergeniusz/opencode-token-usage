@@ -114,7 +114,4 @@ export function buildCallText(store: TokenUsageStore, scope: string, days: numbe
   }
 }
 
-export const COMMAND_DESCRIPTION =
-  "Show token & cost usage. Args: global | models | days [n] | rebuild | reset [confirm] | session"
 
-export const SUBCOMMANDS = ["global", "models", "days", "rebuild", "reset", "session"]

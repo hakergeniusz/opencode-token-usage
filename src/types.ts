@@ -35,9 +35,8 @@ export interface CallRecord {
 }
 
 /**
- * Persisted store. Kept in `ctx.storage` under a single key rather than a
- * hand-managed JSON file, but the shape mirrors the original pi extension so
- * the same reports can be produced.
+ * Persisted store. Kept in plugin storage under a single key as the durable
+ * source for accounting and reports.
  */
 export interface TokenUsageStore {
   version: 1

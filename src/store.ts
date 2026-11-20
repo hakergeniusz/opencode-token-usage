@@ -52,7 +52,7 @@ export function addInto(dst: Totals, src: Totals): void {
 /**
  * Convert OpenCode's `TokenUsage.Info` (+ call cost) into our Totals shape.
  * `reasoning` is folded into `output` so no generated tokens are lost;
- * `total` follows the original pi fallback of input + output (cache excluded).
+ * `total` is input + output (cache excluded).
  */
 export function totalsFromUsage(usage: UsageInfo, cost?: number): Totals {
   const input = usage.input ?? 0

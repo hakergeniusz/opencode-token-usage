@@ -1,14 +1,6 @@
 import { Plugin } from "@opencode/plugin"
 import { formatTotalsLine } from "./format"
-import {
-  COMMAND_DESCRIPTION,
-  SUBCOMMANDS,
-  buildCallText,
-  buildDaysReport,
-  buildGlobalReport,
-  buildModelsReport,
-  buildSessionReport,
-} from "./report"
+import { buildCallText } from "./report"
 import { STORAGE_KEY, createUsageStore, totalsFromUsage } from "./store"
 import type { CallRecord } from "./types"
 
@@ -62,8 +54,7 @@ export default Plugin.define({
             const call: CallRecord = {
               id: `usage:${d.source ?? "unknown"}:${event.id}`,
               sessionID: d.sessionID,
-              // Auxiliary calls have no primary model attribution, matching
-              // the original extension's treatment of nested tool usage.
+              // Auxiliary calls have no primary model attribution.
               ...totalsFromUsage(d.tokens, d.cost),
               ts: event.created ?? Date.now(),
             }
@@ -120,7 +111,6 @@ export default Plugin.define({
       controller.abort()
       void modelHook.dispose()
       void toolReg.dispose()
-      void commandReg.dispose()
     }
   },
 })
