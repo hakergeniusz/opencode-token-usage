@@ -12,8 +12,8 @@ The implementation is original and inspired by Claude Code's cost tracker (`/cos
   session — persisted durably via the plugin storage API.
 - Deduplicates calls by id so redelivered events never double-count.
 - Formats totals Claude-Code style: compact `1.2k` / `3.45M` numbers and `$0.0234`-style costs.
-- Exposes a `/tokens` slash command and a `token_usage` agent tool.
-- Adds a compact live token/cost readout to the TUI prompt footer.
+- Exposes a `token_usage` agent tool for querying session/global/model/day usage (with top model and daily breakdowns).
+- Adds a compact live token/cost readout (including top model) to the TUI prompt footer. No separate `/tokens` command — use OpenCode's built-in `/stats` for native session stats and this plugin's tool/footer for persistent cross-session accounting.
 
 ## Install / load
 

@@ -112,70 +112,9 @@ export default Plugin.define({
       })
     })
 
-    // `/tokens` command — the analogue of Claude Code's `/cost`.
-    const commandReg = await c.command.transform((editor: any) => {
-      editor.add({
-        name: "tokens",
-        description: COMMAND_DESCRIPTION,
-        execute: async ({ sessionID, prompt }: any) => {
-          const parts = String(prompt?.text ?? "")
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean)
-          if (parts[0]?.toLowerCase() === "/tokens") parts.shift()
-          const sub = (parts[0] ?? "").toLowerCase()
-
-          await store.ready()
-          let title: string
-          let lines: string[]
-
-          if (sub === "rebuild") {
-            const result = await store.rebuild()
-            const snapshot = await store.get()
-            title = "Token usage — rebuilt"
-            lines = [
-              `recounted ${result.calls} calls across ${result.sessions} sessions`,
-              formatTotalsLine(snapshot.total),
-            ]
-          } else if (sub === "reset") {
-            if ((parts[1] ?? "").toLowerCase() !== "confirm") {
-              title = "Token usage — reset"
-              lines = [
-                "This clears global totals, per-model and per-day history.",
-                "The current session's recorded calls are preserved.",
-                "Run `/tokens reset confirm` to proceed.",
-              ]
-            } else {
-              await store.reset(sessionID)
-              title = "Token usage — reset"
-              lines = [
-                "Global token usage reset.",
-                formatTotalsLine((await store.get()).total),
-              ]
-            }
-          } else if (sub === "global") {
-            title = "Token usage — global"
-            lines = buildGlobalReport(await store.get())
-          } else if (sub === "models") {
-            title = "Token usage — by model"
-            lines = buildModelsReport(await store.get())
-          } else if (sub === "days") {
-            const n = Math.min(Math.max(parseInt(parts[1] ?? "14", 10) || 14, 1), 90)
-            lines = buildDaysReport(await store.get(), n)
-            title = `Token usage — last ${lines.length} days`
-          } else if (sub && !SUBCOMMANDS.includes(sub)) {
-            title = "Token usage"
-            lines = [`Unknown subcommand "${sub}".`, `Use: ${SUBCOMMANDS.join(", ")}`]
-          } else {
-            title = "Token usage — session"
-            lines = buildSessionReport(await store.get(), sessionID)
-          }
-
-          const text = [title, ...lines.map((line) => `  ${line}`)].join("\n")
-          await c.session.synthetic({ sessionID, text })
-        },
-      })
-    })
+    // `/tokens` command removed by design: usage is exposed via the TUI footer status,
+    // the `token_usage` tool, and OpenCode's built-in `/stats` (CLI/TUI). Keeping
+    // reports available programmatically through the tool instead of a separate command.
 
     return () => {
       controller.abort()
